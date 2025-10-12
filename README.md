@@ -1,0 +1,1 @@
+# Sistem-de-monitorizare-a-parametrilor-de-mediu-ai-unei-plante-bazat-pe-STM32-si-Bluetooth-
