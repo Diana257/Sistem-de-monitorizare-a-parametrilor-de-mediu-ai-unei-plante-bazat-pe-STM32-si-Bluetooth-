@@ -18,10 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>   // pentru itoa
-
+#include <stdio.h>    // pentru sprintf
+#include <string.h>   // pentru strlen
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,6 +44,7 @@
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -57,6 +56,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -134,22 +134,12 @@ uint8_t DHT11_Read(void) {
   }
   return b;
 }
-/* USER CODE END 0 */
 
-/* USER CODE BEGIN PV */
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-/* USER CODE BEGIN 0 */
-
+void UART_SendAll(char *msg) {
+    HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY); // catre PC prin USB
+    HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY); // catre HC-05 prin Bluetooth
+}
 
 /* USER CODE END 0 */
 
@@ -157,102 +147,54 @@ uint8_t DHT11_Read(void) {
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
-{
+int main(void) {
+    HAL_Init();
+    SystemClock_Config();
+    MX_GPIO_Init();
+    MX_USART2_UART_Init();
+    MX_TIM1_Init();
+    MX_USART1_UART_Init();
+    HAL_TIM_Base_Start(&htim1);
 
-  /* USER CODE BEGIN 1 */
+    char buf[64];
 
-  /* USER CODE END 1 */
+    while (1) {
+        if (DHT11_Start()) {
+            RHI = DHT11_Read();
+            RHD = DHT11_Read();
+            TCI = DHT11_Read();
+            TCD = DHT11_Read();
+            SUM = DHT11_Read();
 
-  /* MCU Configuration--------------------------------------------------------*/
+            if (RHI + RHD + TCI + TCD == SUM) {
+                tCelsius = (float)TCI + (float)(TCD / 10.0);
+                RH = (float)RHI + (float)(RHD / 10.0);
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+                // trimite valori
+                sprintf(buf, "Temp=%.1f C  Hum=%.1f %%\r\n", tCelsius, RH);
+                UART_SendAll(buf);
 
-  /* USER CODE BEGIN Init */
+                // LED logic
+                if (tCelsius < 15.0) {
+                    HAL_GPIO_WritePin(LEDGREEN_GPIO_Port, LEDGREEN_Pin, GPIO_PIN_SET);
+                    HAL_GPIO_WritePin(LEDYELLOW_GPIO_Port, LEDYELLOW_Pin, GPIO_PIN_RESET);
+                    HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_RESET);
+                } else if (tCelsius < 25.0) {
+                    HAL_GPIO_WritePin(LEDGREEN_GPIO_Port, LEDGREEN_Pin, GPIO_PIN_RESET);
+                    HAL_GPIO_WritePin(LEDYELLOW_GPIO_Port, LEDYELLOW_Pin, GPIO_PIN_SET);
+                    HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_RESET);
+                } else {
+                    HAL_GPIO_WritePin(LEDGREEN_GPIO_Port, LEDGREEN_Pin, GPIO_PIN_RESET);
+                    HAL_GPIO_WritePin(LEDYELLOW_GPIO_Port, LEDYELLOW_Pin, GPIO_PIN_RESET);
+                    HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_SET);
+                }
+            } else {
+                UART_SendAll("DHT11 checksum error\r\n");
+            }
+        }
 
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USART2_UART_Init();
-  MX_TIM1_Init();
-  /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start(&htim1);
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  /* USER CODE BEGIN WHILE */
-  while (1) {
-      if (DHT11_Start()) {
-          RHI = DHT11_Read();
-          RHD = DHT11_Read();
-          TCI = DHT11_Read();
-          TCD = DHT11_Read();
-          SUM = DHT11_Read();
-
-          if (RHI + RHD + TCI + TCD == SUM) {
-              tCelsius = (float)TCI + (float)(TCD / 10.0);
-              RH = (float)RHI + (float)(RHD / 10.0);
-
-              char buf[32];
-
-              // Temperatura (integral + zecimal)
-              itoa((int)tCelsius, buf, 10);
-              HAL_UART_Transmit(&huart2, (uint8_t*)"Temp=", 5, HAL_MAX_DELAY);
-              HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), HAL_MAX_DELAY);
-
-              HAL_UART_Transmit(&huart2, (uint8_t*)".", 1, HAL_MAX_DELAY);
-              itoa((int)((tCelsius - (int)tCelsius) * 10), buf, 10);
-              HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), HAL_MAX_DELAY);
-              HAL_UART_Transmit(&huart2, (uint8_t*)" C  ", 4, HAL_MAX_DELAY);
-
-              // Umiditatea
-              itoa((int)RH, buf, 10);
-              HAL_UART_Transmit(&huart2, (uint8_t*)"Hum=", 4, HAL_MAX_DELAY);
-              HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), HAL_MAX_DELAY);
-
-              HAL_UART_Transmit(&huart2, (uint8_t*)".", 1, HAL_MAX_DELAY);
-              itoa((int)((RH - (int)RH) * 10), buf, 10);
-              HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), HAL_MAX_DELAY);
-              HAL_UART_Transmit(&huart2, (uint8_t*)" %\r\n", 4, HAL_MAX_DELAY);
-
-              // LED-uri in functie de temperatura
-              if (tCelsius < 15.0) {
-                  HAL_GPIO_WritePin(LEDGREEN_GPIO_Port, LEDGREEN_Pin, GPIO_PIN_SET);     // PA8
-                  HAL_GPIO_WritePin(LEDYELLOW_GPIO_Port, LEDYELLOW_Pin, GPIO_PIN_RESET); // PA10
-                  HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_RESET);         // PB5
-              } else if (tCelsius < 25.0) {
-                  HAL_GPIO_WritePin(LEDGREEN_GPIO_Port, LEDGREEN_Pin, GPIO_PIN_RESET);
-                  HAL_GPIO_WritePin(LEDYELLOW_GPIO_Port, LEDYELLOW_Pin, GPIO_PIN_SET);
-                  HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_RESET);
-              } else {
-                  HAL_GPIO_WritePin(LEDGREEN_GPIO_Port, LEDGREEN_Pin, GPIO_PIN_RESET);
-                  HAL_GPIO_WritePin(LEDYELLOW_GPIO_Port, LEDYELLOW_Pin, GPIO_PIN_RESET);
-                  HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_SET);
-              }
-
-
-
-
-
-          } else {
-              HAL_UART_Transmit(&huart2, (uint8_t*)"DHT11 checksum error\r\n", 23, HAL_MAX_DELAY);
-          }
-      }
-      HAL_Delay(2000);
-  }
-
-  /* USER CODE END 3 */
+        HAL_Delay(2000);
+    }
 }
 
 /**
@@ -349,6 +291,54 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -415,7 +405,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LED_GREEN_Pin|LEDGREEN_Pin|LEDYELLOW_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LED_GREEN_Pin|DHT11_Pin_Pin|LEDGREEN_Pin|LEDYELLOW_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LDRED_GPIO_Port, LDRED_Pin, GPIO_PIN_RESET);
@@ -428,7 +418,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LED_GREEN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : DHT11_Pin_Pin */
-
+  GPIO_InitStruct.Pin = DHT11_Pin_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(DHT11_Pin_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LEDGREEN_Pin LEDYELLOW_Pin */
   GPIO_InitStruct.Pin = LEDGREEN_Pin|LEDYELLOW_Pin;
@@ -483,3 +477,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
