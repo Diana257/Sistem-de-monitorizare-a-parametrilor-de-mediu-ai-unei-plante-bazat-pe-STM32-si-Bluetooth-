@@ -47,13 +47,21 @@ Utilizatorul poate controla pompa și poate vizualiza datele în timp real prin 
 | PA8     | Verde | Sol umed / clipire = ok |
 
 
-## Senzori și pinii aferenți
 
-| Senzor                     | Pin STM32 | Tip interfață | Parametru măsurat |
-|---------------------------|-----------|----------------|--------------------|
-| DHT11                     | PA7       | Digital        | Temperatură + umiditate aer |
-| Senzor umiditate sol      | PA0       | ADC (analogic) | Umiditate sol      |
-| Senzor nivel apă          | PA1       | ADC (analogic) | Prezență/absență apă |
+## Senzori, actuatori și pinii aferenți
+
+| Componentă                | Pin STM32 | Tip interfață      | Funcție / Parametru |
+|---------------------------|-----------|---------------------|----------------------|
+| **DHT11**                 | PA7       | Digital (GPIO)      | Temperatură + umiditate aer |
+| **Senzor umiditate sol**  | PA0       | ADC (analogic)      | Umiditate sol |
+| **Senzor nivel apă**      | PA1       | ADC (analogic)      | Prezență/absență apă |
+| **LED roșu**              | PB5       | GPIO Output         | Lipsă apă |
+| **LED galben**            | PA10      | GPIO Output         | Sol uscat |
+| **LED verde**             | PA8       | GPIO Output         | Sol umed / funcționare normală |
+| **Driver pompă TA6586**  | PB4       | GPIO Output         | Control pompă apă |
+| **Modul Bluetooth HC-05** | PC4 / PC5 | UART1 (TX/RX)       | Comunicație cu telefonul |
+| **Interfață USB UART**    | PA2 / PA3 | UART2 (TX/RX)       | Debug prin USB virtual COM |
+
 
 
 
