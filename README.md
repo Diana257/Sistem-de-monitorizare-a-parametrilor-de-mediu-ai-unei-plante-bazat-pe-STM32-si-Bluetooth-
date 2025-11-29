@@ -1,4 +1,4 @@
-# Sistem de Monitorizare ai Parametrilor de Mediu și Control al Procesului de Îngrijire ai unei Plante de Interior Folosind FreeRTOS și Comunicație Bluetooth
+# Sistem de Monitorizare și Control al Îngrijirii unei Plante de Interior Bazat pe FreeRTOS și Comunicație Bluetooth
 
 Acest proiect implementează un sistem inteligent de monitorizare și irigare automată a plantelor de interior, folosind:
  - microcontroller STM32 Nucleo-G071RB
