@@ -82,3 +82,8 @@ Sistemul este construit pe placa Nucleo-G071RB și include:
 Imaginea de mai jos prezintă schema bloc a sistemului:
 
 <img width="2644" height="1964" alt="schemaHW" src="https://github.com/user-attachments/assets/9c580336-60be-49c2-8890-2251968199c4" />
+
+
+## Schema electrică
+<img width="2564" height="1352" alt="image" src="https://github.com/user-attachments/assets/a1cd5c62-9f68-4687-b51b-75abaaa9a589" />
+
