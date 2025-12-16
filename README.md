@@ -81,9 +81,23 @@ Sistemul este construit pe placa Nucleo-G071RB și include:
 
 Imaginea de mai jos prezintă schema bloc a sistemului:
 
-<img width="2644" height="1964" alt="schemaHW" src="https://github.com/user-attachments/assets/9c580336-60be-49c2-8890-2251968199c4" />
+<img width="1964" height="1928" alt="image" src="https://github.com/user-attachments/assets/86066d5e-a3da-4bec-a9d7-65cc037dc1aa" />
 
 
 ## Schema electrică
 <img width="2564" height="1352" alt="image" src="https://github.com/user-attachments/assets/a1cd5c62-9f68-4687-b51b-75abaaa9a589" />
+
+
+## Evaluarea Performanțelor în Timp Real
+
+Sistemul a fost analizat din punct de vedere al comportamentului de timp real folosind un timer hardware (TIM1).
+
+Rezultatele obținute:
+- Timp citire senzor DHT11: ~5.3 ms
+- Conversie ADC (sol + apă): ~0.095 ms
+- Durata totală SenzoriTask: ~5.4 ms
+- Procesare comandă Bluetooth: ~0.11 ms
+
+Rezultatele confirmă că sistemul respectă constrângerile de timp real, task-urile fiind executate stabil cu o perioadă de 2 secunde.
+
 
